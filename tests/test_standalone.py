@@ -37,6 +37,7 @@ def test_core_functions_are_identical_to_package(standalone):
     pairs = [
         (steam_paths.find_steam_dir, standalone.find_steam_dir),
         (steam_paths._candidates, standalone._candidates),
+        (licenses.read_licenses, standalone.read_licenses),
         (licenses.read_owned_appids, standalone.read_owned_appids),
         (sizes.compute_app_size, standalone.compute_app_size),
         (sizes.fetch_app_sizes, standalone.fetch_app_sizes),

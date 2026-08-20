@@ -19,10 +19,16 @@ class UnsupportedFormatError(Exception):
         )
 
 
-def read_owned_appids(steam_dir: Path) -> set[int]:
-    """Return every app ID granted by the account's cached licenses."""
+def read_licenses(steam_dir: Path) -> tuple[set[int], set[int]]:
+    """Return (appids, depotids) granted by the account's cached licenses.
+
+    depotids matter because Steam ships region/variant twins of the same
+    content as separate depots on one app; a real install only downloads
+    the depots your licenses grant.
+    """
     path = steam_dir / "appcache" / "packageinfo.vdf"
     appids: set[int] = set()
+    depotids: set[int] = set()
     with open(path, "rb") as f:
         magic, _universe = struct.unpack("<II", f.read(8))
         if magic not in (MAGIC_V27, MAGIC_V28):
@@ -41,4 +47,11 @@ def read_owned_appids(steam_dir: Path) -> set[int]:
             for pkg in data.values():
                 for appid in pkg.get("appids", {}).values():
                     appids.add(int(appid))
-    return appids
+                for depotid in pkg.get("depotids", {}).values():
+                    depotids.add(int(depotid))
+    return appids, depotids
+
+
+def read_owned_appids(steam_dir: Path) -> set[int]:
+    """Return every app ID granted by the account's cached licenses."""
+    return read_licenses(steam_dir)[0]

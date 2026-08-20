@@ -6,7 +6,7 @@ import json
 import sys
 
 from . import __version__
-from .licenses import UnsupportedFormatError, read_owned_appids
+from .licenses import UnsupportedFormatError, read_licenses
 from .sizes import FetchResult, SteamConnectError, fetch_app_sizes
 from .steam_paths import SteamNotFoundError, find_steam_dir
 
@@ -114,9 +114,10 @@ def main(argv: list[str] | None = None) -> int:
     try:
         steam_dir = find_steam_dir(args.steam_dir)
         print(f"Steam install: {steam_dir}", file=sys.stderr)
-        appids = read_owned_appids(steam_dir)
+        appids, depotids = read_licenses(steam_dir)
         print(f"Licenses grant {len(appids)} apps; fetching sizes...", file=sys.stderr)
-        result = fetch_app_sizes(appids, args.os or default_os(), progress_cb=progress)
+        result = fetch_app_sizes(appids, args.os or default_os(), progress_cb=progress,
+                                 granted_depots=depotids or None)
     except (SteamNotFoundError, UnsupportedFormatError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

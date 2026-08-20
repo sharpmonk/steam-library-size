@@ -49,10 +49,10 @@ def test_render_report_include_all_changes_total():
 
 def test_main_json_output(monkeypatch, capsys, tmp_path):
     monkeypatch.setattr("steam_library_size.cli.find_steam_dir", lambda override: tmp_path)
-    monkeypatch.setattr("steam_library_size.cli.read_owned_appids", lambda d: {1, 2})
+    monkeypatch.setattr("steam_library_size.cli.read_licenses", lambda d: ({1, 2}, set()))
     monkeypatch.setattr(
         "steam_library_size.cli.fetch_app_sizes",
-        lambda appids, os_choice, progress_cb: sample_result(),
+        lambda appids, os_choice, progress_cb, granted_depots=None: sample_result(),
     )
     assert main(["--json"]) == 0
     data = json.loads(capsys.readouterr().out)
@@ -76,9 +76,9 @@ def test_main_connect_error_exit_2(monkeypatch, capsys, tmp_path):
     from steam_library_size.sizes import SteamConnectError
 
     monkeypatch.setattr("steam_library_size.cli.find_steam_dir", lambda override: tmp_path)
-    monkeypatch.setattr("steam_library_size.cli.read_owned_appids", lambda d: {1})
+    monkeypatch.setattr("steam_library_size.cli.read_licenses", lambda d: ({1}, set()))
 
-    def boom(appids, os_choice, progress_cb):
+    def boom(appids, os_choice, progress_cb, granted_depots=None):
         raise SteamConnectError("no net")
 
     monkeypatch.setattr("steam_library_size.cli.fetch_app_sizes", boom)

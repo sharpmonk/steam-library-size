@@ -113,10 +113,16 @@ class UnsupportedFormatError(Exception):
         )
 
 
-def read_owned_appids(steam_dir: Path) -> set[int]:
-    """Return every app ID granted by the account's cached licenses."""
+def read_licenses(steam_dir: Path) -> tuple[set[int], set[int]]:
+    """Return (appids, depotids) granted by the account's cached licenses.
+
+    depotids matter because Steam ships region/variant twins of the same
+    content as separate depots on one app; a real install only downloads
+    the depots your licenses grant.
+    """
     path = steam_dir / "appcache" / "packageinfo.vdf"
     appids: set[int] = set()
+    depotids: set[int] = set()
     with open(path, "rb") as f:
         magic, _universe = struct.unpack("<II", f.read(8))
         if magic not in (MAGIC_V27, MAGIC_V28):
@@ -135,7 +141,14 @@ def read_owned_appids(steam_dir: Path) -> set[int]:
             for pkg in data.values():
                 for appid in pkg.get("appids", {}).values():
                     appids.add(int(appid))
-    return appids
+                for depotid in pkg.get("depotids", {}).values():
+                    depotids.add(int(depotid))
+    return appids, depotids
+
+
+def read_owned_appids(steam_dir: Path) -> set[int]:
+    """Return every app ID granted by the account's cached licenses."""
+    return read_licenses(steam_dir)[0]
 
 
 # --------------------------------------------------------------------------
@@ -164,12 +177,19 @@ class FetchResult:
     skipped_appids: list[int] = field(default_factory=list)
 
 
-def compute_app_size(app: dict, os_choice: str) -> int:
-    """Install size in bytes: public-branch depots, English only, per-OS."""
+def compute_app_size(app: dict, os_choice: str, granted_depots: set[int] | None = None) -> int:
+    """Install size in bytes: public-branch depots, English only, per-OS.
+
+    granted_depots, when given, limits the sum to depots the account's
+    licenses actually grant - apps can carry region/variant twins of the
+    same content and a real install only downloads the licensed one.
+    """
     shared = 0
     per_os = {"windows": 0, "linux": 0, "macos": 0}
-    for depot in app.get("depots", {}).values():
+    for depot_id, depot in app.get("depots", {}).items():
         if not isinstance(depot, dict):
+            continue
+        if granted_depots is not None and depot_id.isdigit() and int(depot_id) not in granted_depots:
             continue
         if depot.get("sharedinstall"):
             continue
@@ -190,10 +210,14 @@ def compute_app_size(app: dict, os_choice: str) -> int:
                     per_os[os_name] += size
     if os_choice == "all":
         return shared + sum(per_os.values())
+    if per_os[os_choice] or shared:
+        return shared + per_os[os_choice]
+    # nothing counted for this OS at all: fall back to another OS's depots
+    # (e.g. a mac user sizing a game that only ships windows depots)
     for os_name in _FALLBACK[os_choice]:
         if per_os[os_name]:
-            return shared + per_os[os_name]
-    return shared
+            return per_os[os_name]
+    return 0
 
 
 CHUNK_SIZE = 50
@@ -207,6 +231,7 @@ def fetch_app_sizes(
     appids: Iterable[int],
     os_choice: str,
     progress_cb: Callable[[str], None] = lambda msg: None,
+    granted_depots: set[int] | None = None,
 ) -> FetchResult:
     """Anonymously fetch product info for appids and compute install sizes."""
     import steam.client  # heavy import (gevent); deferred so tests can patch it
@@ -247,7 +272,7 @@ def fetch_app_sizes(
                         appid=appid,
                         name=common.get("name", f"app {appid}"),
                         type=common.get("type", "").lower(),
-                        size_bytes=compute_app_size(app, os_choice),
+                        size_bytes=compute_app_size(app, os_choice, granted_depots),
                     )
                 )
             progress_cb(f"fetched {min(start + CHUNK_SIZE, len(ids))}/{len(ids)} apps")
@@ -364,9 +389,10 @@ def main(argv: list[str] | None = None) -> int:
     try:
         steam_dir = find_steam_dir(args.steam_dir)
         print(f"Steam install: {steam_dir}", file=sys.stderr)
-        appids = read_owned_appids(steam_dir)
+        appids, depotids = read_licenses(steam_dir)
         print(f"Licenses grant {len(appids)} apps; fetching sizes...", file=sys.stderr)
-        result = fetch_app_sizes(appids, args.os or default_os(), progress_cb=progress)
+        result = fetch_app_sizes(appids, args.os or default_os(), progress_cb=progress,
+                                 granted_depots=depotids or None)
     except (SteamNotFoundError, UnsupportedFormatError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

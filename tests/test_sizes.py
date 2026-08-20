@@ -27,9 +27,35 @@ def test_shared_plus_windows():
     assert compute_app_size(a, "all") == 60
 
 
-def test_windows_falls_back_to_linux_when_no_windows_depots():
+def test_shared_depots_suffice_no_cross_os_fallback():
+    # Where Winds Meet bug: shared depots cover the install; an empty windows
+    # bucket must NOT drag in the linux (Steam Deck) depot.
     a = app([depot(10), depot(30, oslist="linux")])
-    assert compute_app_size(a, "windows") == 40
+    assert compute_app_size(a, "windows") == 10
+
+
+def test_windows_falls_back_to_linux_when_nothing_else_counted():
+    # True fallback: no shared depots, no windows depots -> use linux size
+    # (a Mac/other-OS user sizing a game that only ships foreign-OS depots).
+    a = app([depot(30, oslist="linux")])
+    assert compute_app_size(a, "windows") == 30
+
+
+def test_granted_depots_filters_unlicensed_twins():
+    # Twin-depot bug: two identical shared depots, licenses grant only one.
+    a = {"depots": {
+        "101": depot(100),
+        "102": depot(100),
+        "103": depot(60, oslist="linux"),
+    }}
+    assert compute_app_size(a, "windows", granted_depots={101, 103}) == 100
+    assert compute_app_size(a, "windows") == 200                    # no gating: count both
+    assert compute_app_size(a, "windows", granted_depots=None) == 200
+
+
+def test_granted_depots_ignores_non_numeric_depot_keys():
+    a = {"depots": {"branches": {"public": {"buildid": "1"}}, "0": depot(10)}}
+    assert compute_app_size(a, "windows", granted_depots={0}) == 10
 
 
 def test_non_english_language_depots_skipped():
@@ -98,6 +124,14 @@ def fake_client(monkeypatch):
     FakeClient.fail_forever_on = set()
     monkeypatch.setattr("steam.client.SteamClient", FakeClient)
     return FakeClient
+
+
+def test_fetch_passes_granted_depots_through(fake_client):
+    # depot "0" of app 10 is not granted -> size collapses to 0
+    result = fetch_app_sizes([10], "windows", granted_depots={999})
+    assert result.apps[0].size_bytes == 0
+    result = fetch_app_sizes([10], "windows", granted_depots={0})
+    assert result.apps[0].size_bytes == 100
 
 
 def test_fetch_happy_path(fake_client):
