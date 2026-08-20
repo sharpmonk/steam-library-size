@@ -47,7 +47,13 @@ public static class PackageInfoParser
             if (pkgId == Terminator) break;
             reader.BaseStream.Seek(headerSkip, SeekOrigin.Current);
             var pkg = new KeyValue();
-            if (!pkg.TryReadAsBinary(stream)) break;          // corrupt blob: stop, keep what we have
+            bool ok;
+            try { ok = pkg.TryReadAsBinary(stream); }
+            catch (Exception ex) when (ex is not UnsupportedFormatException)
+            {
+                throw CorruptBlob(pkgId, ex);
+            }
+            if (!ok) throw CorruptBlob(pkgId, null);
             foreach (var child in pkg["appids"].Children)
                 appIds.Add((uint)child.AsUnsignedLong());
             foreach (var child in pkg["depotids"].Children)
@@ -55,4 +61,10 @@ public static class PackageInfoParser
         }
         return new LicenseGrants(appIds, depotIds);
     }
+
+    private static InvalidDataException CorruptBlob(uint pkgId, Exception? inner) =>
+        new(
+            $"packageinfo.vdf is corrupt: could not parse the data blob for package {pkgId}. " +
+            "Steam may be mid-write - restart Steam and try again, or file an issue at " +
+            "https://github.com/sharpmonk/steam-library-size/issues", inner);
 }

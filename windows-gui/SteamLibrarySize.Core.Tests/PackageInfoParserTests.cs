@@ -94,6 +94,33 @@ public class PackageInfoParserTests
         Assert.Equal(new HashSet<uint> { 221 }, grants.DepotIds);
     }
 
+    [Fact]
+    public void CorruptBlobThrowsInvalidDataException()
+    {
+        // Valid header + one packageid + header-skip bytes, then garbage that
+        // is NOT a valid binary KeyValue object (no terminator, no type-0
+        // root node) instead of a real package blob. This drives
+        // TryReadAsBinary to fail mid-blob, distinct from TruncatedFileStopsCleanly
+        // (which truncates cleanly at a packageid boundary, before any blob
+        // bytes are read at all).
+        using var ms = new MemoryStream();
+        using (var w = new BinaryWriter(ms, System.Text.Encoding.UTF8, leaveOpen: true))
+        {
+            w.Write(MagicV28);
+            w.Write(1u);                                // universe
+            w.Write(10u);                                // packageid
+            w.Write(new byte[32]);                       // header skip (v28)
+            w.Write(new byte[] { 0xFF, 0xFF, 0xFF, 0x00, 0x01, 0x02, 0x03 }); // garbage blob
+        }
+        var bytes = ms.ToArray();
+
+        var ex = Assert.Throws<InvalidDataException>(
+            () => PackageInfoParser.ReadLicenses(new MemoryStream(bytes)));
+        Assert.Contains("packageinfo.vdf is corrupt", ex.Message);
+        Assert.Contains("package 10", ex.Message);
+        Assert.Contains("github.com/sharpmonk/steam-library-size/issues", ex.Message);
+    }
+
     // Guarded by File.Exists rather than [SkippableFact]: on this SDK/VSTest
     // combo, Xunit.SkippableFact 1.5.61 (the latest published version) makes
     // `dotnet test` exit non-zero ("Result reported for unknown test case" /
