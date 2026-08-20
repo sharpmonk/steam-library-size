@@ -25,7 +25,7 @@ public sealed class SizeFetcher(IProductInfoSource source)
             for (int attempt = 1; attempt <= 2 && info is null; attempt++)
             {
                 try { info = await source.GetProductInfoAsync(chunk, ct).ConfigureAwait(false); }
-                catch (OperationCanceledException) { throw; }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
                 catch (Exception) when (attempt == 1) { /* retry once */ }
                 catch (Exception) { /* second failure: skip chunk */ }
             }

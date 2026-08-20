@@ -32,6 +32,7 @@ public partial class MainViewModel : ObservableObject
     {
         IsScanning = true;
         HasResults = false;
+        ProgressValue = 0;
         Apps.Clear();
         try
         {
@@ -77,9 +78,12 @@ public partial class MainViewModel : ObservableObject
         foreach (var a in visible) Apps.Add(AppRow.From(a));
         var totals = LibraryTotals.Compute(_lastResult.Apps);
         Headline = totals.Headline(IncludeDlc);
-        StatusText = _lastResult.SkippedAppIds.Count == 0
-            ? "Done. Sizes are fresh-install depot sizes (public branch, English)."
-            : $"Done. {_lastResult.SkippedAppIds.Count} apps could not be fetched and are not counted.";
+        StatusText = _lastResult.SkippedAppIds.Count switch
+        {
+            0 => "Done. Sizes are fresh-install depot sizes (public branch, English).",
+            1 => "Done. 1 app could not be fetched and is not counted.",
+            var n => $"Done. {n} apps could not be fetched and are not counted."
+        };
     }
 
     [RelayCommand]

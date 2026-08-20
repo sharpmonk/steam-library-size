@@ -85,6 +85,20 @@ public class SizeFetcherTests
     }
 
     [Fact]
+    public async Task ChunkRetriesOnceThenSkipsOnSpuriousTaskCanceled()
+    {
+        // SteamKit2 fails timed-out/disconnected jobs by cancelling the task, even though
+        // the caller's own CancellationToken was never signalled. That must be treated as
+        // an ordinary transient failure (retry once, then skip) — not rethrown as a real
+        // cancellation.
+        int calls = 0;
+        var src = new FakeSource { Handler = _ => { calls++; throw new TaskCanceledException("job timed out"); } };
+        var result = await new SizeFetcher(src).FetchAsync([220], OsChoice.Windows);
+        Assert.Equal(2, calls);                        // one retry
+        Assert.Equal(new uint[] { 220 }, result.SkippedAppIds);
+    }
+
+    [Fact]
     public async Task ReportsProgress()
     {
         var src = new FakeSource();
