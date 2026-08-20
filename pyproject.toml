@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "steam-library-size"
-version = "0.1.0"
+version = "0.2.0"
 description = "How big would your Steam library be if you installed every game? Computed locally - no API key, no public profile needed."
 readme = "README.md"
 license = "MIT"
