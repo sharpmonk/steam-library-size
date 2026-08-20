@@ -1,0 +1,19 @@
+name: Windows crash repro
+on:
+  workflow_dispatch:
+jobs:
+  repro:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -e .
+      - run: pip list
+      - run: python -X faulthandler scripts/fetch_repro.py
+        timeout-minutes: 10
