@@ -93,6 +93,16 @@ python3 -m pip install --user steam-library-size    # Windows: py -m pip install
 - **`error: Could not find a Steam install`** — start Steam once and log in, or pass
   the location yourself: `steam-library-size --steam-dir "D:\Steam"`.
 
+## Windows app (no Python needed)
+
+Prefer a windowed app? Grab `SteamLibrarySize.exe` from the
+[latest release](https://github.com/sharpmonk/steam-library-size/releases),
+double-click it, and hit **Scan**. It reads the same local Steam data as the
+command-line tool — nothing is uploaded anywhere.
+
+> Windows SmartScreen will warn about an unrecognised app the first time
+> (the exe isn't code-signed). Click **More info → Run anyway**.
+
 ## Usage
 
 Just run it:

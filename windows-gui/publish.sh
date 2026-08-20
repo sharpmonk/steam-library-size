@@ -6,5 +6,6 @@ DOTNET="${DOTNET:-$HOME/.dotnet/dotnet}"
 export DOTNET_ROOT="${DOTNET_ROOT:-$HOME/.dotnet}"
 "$DOTNET" publish SteamLibrarySize.Gui -c Release -r win-x64 --self-contained \
   -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
+  -p:EnableCompressionInSingleFile=true -p:SatelliteResourceLanguages=en \
   -o publish
 ls -lh publish/*.exe

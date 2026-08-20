@@ -1,0 +1,32 @@
+name: gui-release
+
+on:
+  push:
+    tags: ["gui-v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Test
+        run: dotnet test windows-gui/SteamLibrarySize.Core.Tests
+      - name: Publish
+        run: >
+          dotnet publish windows-gui/SteamLibrarySize.Gui -c Release -r win-x64
+          --self-contained -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:EnableCompressionInSingleFile=true -p:SatelliteResourceLanguages=en
+          -o windows-gui/publish
+      - name: Rename artifact
+        run: Copy-Item windows-gui/publish/SteamLibrarySize.Gui.exe SteamLibrarySize.exe
+      - name: Attach to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: SteamLibrarySize.exe
