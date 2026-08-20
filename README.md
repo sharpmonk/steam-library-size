@@ -2,6 +2,8 @@
 
 **How big would your Steam library be if you installed *every* game you own?**
 
+![Installing and running steam-library-size in a terminal: a 288-game library totals 6,401 GB](screenshots/demo.png)
+
 Steam only knows the size of games you've already installed. SteamDB's calculator
 doesn't do install sizes, and the old web calculators are dead — and they needed a
 public profile anyway. This tool answers the question locally: it reads the license
