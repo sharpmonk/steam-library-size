@@ -2,7 +2,7 @@
 
 **How big would your Steam library be if you installed *every* game you own?**
 
-![Installing and running steam-library-size in a terminal: a 288-game library totals 6,401 GB](screenshots/demo.png)
+![Installing and running steam-library-size in a terminal: a 288-game library totals 4,824 GB](screenshots/demo.png)
 
 Steam only knows the size of games you've already installed. SteamDB's calculator
 doesn't do install sizes, and the old web calculators are dead — and they needed a
@@ -13,6 +13,20 @@ accounts.**
 
 ## Install
 
+### Windows app (no Python needed)
+
+Prefer a windowed app? Grab `SteamLibrarySize.exe` from the
+[latest release](https://github.com/sharpmonk/steam-library-size/releases),
+double-click it, and hit **Scan**. It reads the same local Steam data as the
+command-line tool — nothing is uploaded anywhere.
+
+![The Windows app showing a 288-game library totalling 4,824 GB with a sortable per-game table](screenshots/windows-gui.png)
+
+> Windows SmartScreen will warn about an unrecognised app the first time
+> (the exe isn't code-signed). Click **More info → Run anyway**.
+
+### Command-line tool
+
 **You need:** Python 3.10 or newer, and Steam installed on the same machine (logged
 in at least once — that's what writes the license cache this tool reads). Your games
 do **not** need to be installed.
@@ -21,7 +35,7 @@ The recommended installer is **pipx** — it's like pip, but it puts command-lin
 in their own isolated environment so they can't break (or be broken by) anything else
 on your system.
 
-### Windows
+#### Windows
 
 1. Install Python from [python.org/downloads](https://www.python.org/downloads/) —
    on the first installer screen, **tick "Add python.exe to PATH"**.
@@ -35,7 +49,7 @@ on your system.
    pipx install steam-library-size
    ```
 
-### Linux
+#### Linux
 
 Install pipx from your package manager, then install the tool:
 
@@ -52,7 +66,7 @@ Close and reopen the terminal, then:
 pipx install steam-library-size
 ```
 
-### macOS
+#### macOS
 
 ```
 brew install pipx
@@ -65,7 +79,7 @@ Close and reopen the terminal, then:
 pipx install steam-library-size
 ```
 
-### Just want a single script to read and run?
+#### Just want a single script to read and run?
 
 The whole tool also exists as one plain Python file:
 [`standalone/steam_library_size.py`](standalone/steam_library_size.py). Download it,
@@ -79,29 +93,19 @@ python3 steam_library_size.py
 Same behavior, same flags. A test in CI keeps it byte-for-byte in sync with the
 packaged version.
 
-### No pipx? Plain pip works too
+#### No pipx? Plain pip works too
 
 ```
 python3 -m pip install --user steam-library-size    # Windows: py -m pip install --user steam-library-size
 ```
 
-### Troubleshooting
+#### Troubleshooting
 
 - **`steam-library-size: command not found`** — you didn't reopen the terminal after
   `pipx ensurepath` (or skipped it). Reopen and try again.
 - **`pipx: command not found` right after installing it** — same fix: new terminal.
 - **`error: Could not find a Steam install`** — start Steam once and log in, or pass
   the location yourself: `steam-library-size --steam-dir "D:\Steam"`.
-
-## Windows app (no Python needed)
-
-Prefer a windowed app? Grab `SteamLibrarySize.exe` from the
-[latest release](https://github.com/sharpmonk/steam-library-size/releases),
-double-click it, and hit **Scan**. It reads the same local Steam data as the
-command-line tool — nothing is uploaded anywhere.
-
-> Windows SmartScreen will warn about an unrecognised app the first time
-> (the exe isn't code-signed). Click **More info → Run anyway**.
 
 ## Usage
 
@@ -115,17 +119,17 @@ Real output from a real library:
 
 ```
 Your Steam library: 288 games
-Installed all at once, that's 6,401.0 GB (6.25 TiB).
+Installed all at once, that's 4,824.2 GB (4.71 TiB).
 An 8 TB drive would hold the lot.
 
-  Games: 6,401.0 GB   DLC: 8.7 GB   Other (tools/demos/etc): 545.2 GB
+  Games: 4,824.2 GB   DLC: 1.1 GB   Other (tools/demos/etc): 453.9 GB
 
 Top 5 biggest games:
-      572.6 GB  Call of Duty®
-      496.6 GB  ARK: Survival Evolved
-      208.2 GB  iRacing
-      182.1 GB  Arma 3
+      372.6 GB  ARK: Survival Evolved
       180.5 GB  FINAL FANTASY VII REBIRTH
+      155.1 GB  Baldur's Gate 3
+      151.6 GB  Destiny 2
+      140.0 GB  Borderlands® 4
 
 8 apps with no size data (usually delisted or test apps).
 ```
