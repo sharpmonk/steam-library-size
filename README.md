@@ -11,15 +11,75 @@ accounts.**
 
 ## Install
 
+**You need:** Python 3.10 or newer, and Steam installed on the same machine (logged
+in at least once — that's what writes the license cache this tool reads). Your games
+do **not** need to be installed.
+
+The recommended installer is **pipx** — it's like pip, but it puts command-line tools
+in their own isolated environment so they can't break (or be broken by) anything else
+on your system.
+
+### Windows
+
+1. Install Python from [python.org/downloads](https://www.python.org/downloads/) —
+   on the first installer screen, **tick "Add python.exe to PATH"**.
+2. Open a new Command Prompt (or PowerShell) and run:
+   ```
+   py -m pip install --user pipx
+   py -m pipx ensurepath
+   ```
+3. **Close and reopen** the terminal (that's what makes the new PATH take effect), then:
+   ```
+   pipx install steam-library-size
+   ```
+
+### Linux
+
+Install pipx from your package manager, then install the tool:
+
+```
+# Debian/Ubuntu:  sudo apt install pipx
+# Fedora:         sudo dnf install pipx
+# Arch:           sudo pacman -S python-pipx
+pipx ensurepath
+```
+
+Close and reopen the terminal, then:
+
 ```
 pipx install steam-library-size
 ```
 
-(or `pip install steam-library-size` if you prefer.)
+### macOS
+
+```
+brew install pipx
+pipx ensurepath
+```
+
+Close and reopen the terminal, then:
+
+```
+pipx install steam-library-size
+```
+
+### No pipx? Plain pip works too
+
+```
+python3 -m pip install --user steam-library-size    # Windows: py -m pip install --user steam-library-size
+```
+
+### Troubleshooting
+
+- **`steam-library-size: command not found`** — you didn't reopen the terminal after
+  `pipx ensurepath` (or skipped it). Reopen and try again.
+- **`pipx: command not found` right after installing it** — same fix: new terminal.
+- **`error: Could not find a Steam install`** — start Steam once and log in, or pass
+  the location yourself: `steam-library-size --steam-dir "D:\Steam"`.
 
 ## Usage
 
-Just run it on a machine where Steam is installed and you've logged in at least once:
+Just run it:
 
 ```
 steam-library-size
