@@ -58,7 +58,8 @@ def _fmt(size: int) -> str:
 def _drive_line(total: int) -> str:
     for tb in DRIVE_SIZES_TB:
         if total <= tb * TB:
-            return f"A {tb} TB drive would hold the lot."
+            article = "An" if tb == 8 else "A"
+            return f"{article} {tb} TB drive would hold the lot."
     return "That's beyond a 16 TB drive - you'd need more than one."
 
 

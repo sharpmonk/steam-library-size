@@ -25,7 +25,7 @@ Just run it on a machine where Steam is installed and you've logged in at least 
 steam-library-size
 ```
 
-Sample output (placeholder — real sample added after end-to-end verification):
+Real output from a real library:
 
 ```
 Your Steam library: 288 games
@@ -35,11 +35,13 @@ An 8 TB drive would hold the lot.
   Games: 6,401.0 GB   DLC: 8.7 GB   Other (tools/demos/etc): 545.2 GB
 
 Top 5 biggest games:
-      572.6 GB  Call of Duty
+      572.6 GB  Call of Duty®
       496.6 GB  ARK: Survival Evolved
       208.2 GB  iRacing
       182.1 GB  Arma 3
       180.5 GB  FINAL FANTASY VII REBIRTH
+
+8 apps with no size data (usually delisted or test apps).
 ```
 
 ### Options
