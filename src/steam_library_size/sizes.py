@@ -55,3 +55,63 @@ def compute_app_size(app: dict, os_choice: str) -> int:
         if per_os[os_name]:
             return shared + per_os[os_name]
     return shared
+
+
+CHUNK_SIZE = 50
+
+
+class SteamConnectError(Exception):
+    pass
+
+
+def fetch_app_sizes(
+    appids: Iterable[int],
+    os_choice: str,
+    progress_cb: Callable[[str], None] = lambda msg: None,
+) -> FetchResult:
+    """Anonymously fetch product info for appids and compute install sizes."""
+    import steam.client  # heavy import (gevent); deferred so tests can patch it
+    from steam.enums import EResult
+
+    ids = sorted({int(a) for a in appids})
+    client = steam.client.SteamClient()
+    login = client.anonymous_login()
+    if login != EResult.OK:
+        raise SteamConnectError(
+            f"Anonymous Steam login failed ({login!r}). "
+            "Check your internet connection and try again."
+        )
+    result = FetchResult()
+    try:
+        for start in range(0, len(ids), CHUNK_SIZE):
+            chunk = ids[start : start + CHUNK_SIZE]
+            info = None
+            for attempt in (1, 2):
+                try:
+                    info = client.get_product_info(apps=chunk, timeout=60)
+                    break
+                except Exception as exc:  # noqa: BLE001 - any transport error
+                    if attempt == 2:
+                        progress_cb(f"warning: giving up on a chunk of {len(chunk)} apps ({exc})")
+            if not info:
+                result.skipped_appids.extend(chunk)
+                continue
+            apps = info.get("apps", {})
+            for appid in chunk:
+                app = apps.get(appid)
+                if app is None:
+                    result.skipped_appids.append(appid)
+                    continue
+                common = app.get("common", {})
+                result.apps.append(
+                    AppSize(
+                        appid=appid,
+                        name=common.get("name", f"app {appid}"),
+                        type=common.get("type", "").lower(),
+                        size_bytes=compute_app_size(app, os_choice),
+                    )
+                )
+            progress_cb(f"fetched {min(start + CHUNK_SIZE, len(ids))}/{len(ids)} apps")
+    finally:
+        client.logout()
+    return result

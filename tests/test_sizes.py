@@ -55,3 +55,76 @@ def test_dataclasses():
     r = FetchResult()
     r.apps.append(AppSize(appid=440, name="Team Fortress 2", type="game", size_bytes=GB))
     assert r.skipped_appids == []
+
+
+import pytest
+
+from steam_library_size.sizes import CHUNK_SIZE, SteamConnectError, fetch_app_sizes
+
+
+class FakeClient:
+    """Serves 2 known apps; appid 30 is a hole to test skip accounting."""
+
+    login_ok = True
+    fail_forever_on = set()  # appids whose chunk should raise every attempt
+
+    def __init__(self):
+        self.calls = 0
+
+    def anonymous_login(self):
+        from steam.enums import EResult
+
+        return EResult.OK if self.login_ok else EResult.Fail
+
+    def logout(self):
+        pass
+
+    def get_product_info(self, apps, timeout=60):
+        self.calls += 1
+        if set(apps) & self.fail_forever_on:
+            raise TimeoutError("boom")
+        catalog = {
+            10: {"common": {"name": "Tiny Game", "type": "Game"},
+                 "depots": {"0": {"config": {}, "manifests": {"public": {"size": "100"}}}}},
+            20: {"common": {"name": "A DLC", "type": "DLC"}, "depots": {}},
+            # appid 30 intentionally absent from responses
+        }
+        return {"apps": {a: catalog[a] for a in apps if a in catalog}}
+
+
+@pytest.fixture
+def fake_client(monkeypatch):
+    FakeClient.login_ok = True
+    FakeClient.fail_forever_on = set()
+    monkeypatch.setattr("steam.client.SteamClient", FakeClient)
+    return FakeClient
+
+
+def test_fetch_happy_path(fake_client):
+    result = fetch_app_sizes([10, 20, 30], "windows")
+    by_id = {a.appid: a for a in result.apps}
+    assert by_id[10].name == "Tiny Game"
+    assert by_id[10].type == "game"          # lowercased
+    assert by_id[10].size_bytes == 100
+    assert by_id[20].size_bytes == 0
+    assert result.skipped_appids == [30]     # missing from response -> skipped
+
+
+def test_fetch_failed_chunk_is_skipped_not_fatal(fake_client):
+    fake_client.fail_forever_on = {10}
+    messages = []
+    result = fetch_app_sizes([10, 20], "windows", progress_cb=messages.append)
+    # 10 and 20 share one chunk (< CHUNK_SIZE apps), so both end up skipped
+    assert sorted(result.skipped_appids) == [10, 20]
+    assert result.apps == []
+    assert any("giving up" in m for m in messages)
+
+
+def test_login_failure_raises(fake_client):
+    fake_client.login_ok = False
+    with pytest.raises(SteamConnectError):
+        fetch_app_sizes([10], "windows")
+
+
+def test_chunk_size_is_50():
+    assert CHUNK_SIZE == 50
