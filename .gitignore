@@ -4,3 +4,8 @@ docs/
 dist/
 .venv/
 .pytest_cache/
+
+# .NET
+windows-gui/**/bin/
+windows-gui/**/obj/
+windows-gui/publish/
