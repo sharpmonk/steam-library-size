@@ -63,6 +63,20 @@ Close and reopen the terminal, then:
 pipx install steam-library-size
 ```
 
+### Just want a single script to read and run?
+
+The whole tool also exists as one plain Python file:
+[`standalone/steam_library_size.py`](standalone/steam_library_size.py). Download it,
+install its two dependencies, and run it:
+
+```
+python3 -m pip install vdf "steam[client]"
+python3 steam_library_size.py
+```
+
+Same behavior, same flags. A test in CI keeps it byte-for-byte in sync with the
+packaged version.
+
 ### No pipx? Plain pip works too
 
 ```
